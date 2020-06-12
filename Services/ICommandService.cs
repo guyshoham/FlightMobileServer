@@ -5,5 +5,6 @@ namespace FlightMobileServer.Services
     public interface ICommandService
     {
         void SendCommand(Command command);
+        string GetScreenshot();
     }
 }

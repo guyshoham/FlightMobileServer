@@ -27,5 +27,15 @@ namespace FlightMobileServer.Controllers
 
             return Ok();
         }
+
+        // GET api/screenshot
+        [HttpGet]
+        [Route("screenshot")]
+        public ActionResult GetScreenshot()
+        {
+            string screenshot = _service.GetScreenshot();
+
+            return Ok(screenshot);
+        }
     }
 }
