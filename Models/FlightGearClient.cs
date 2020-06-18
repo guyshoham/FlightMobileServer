@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace FlightMobileServer.Models
 {
@@ -33,15 +34,16 @@ namespace FlightMobileServer.Models
             _client.Connect("127.0.0.1", 5402);
             NetworkStream stream = _client.GetStream();
             foreach (AsyncCommand command in _queue.GetConsumingEnumerable())
-            {
-                //byte[] sendBuffer = // command to buffer…
+            {   //this is the way to send requests to the stream
+                byte[] sendBuffer = Encoding.ASCII.GetBytes("get /instrumentation/airspeed-indicator/indicated-speed-kt\n");
                 byte[] recvBuffer = new byte[1024];
-                //stream.Write(sendBuffer, 0, sendBuffer.Length);
+                stream.Write(sendBuffer, 0, sendBuffer.Length);
                 int nRead = stream.Read(recvBuffer, 0, 1024);
-                //Result res = // recvBuffer to Result
+                //after command has complited, we get the status in result
+                Result res = command.Task.Result;
                              // TaskCompletionSource allows an external thread to set
                              // the result (or the exceptino) on the associated task object
-                //command.Completion.SetResult(res);
+                command.Completion.SetResult(res);
             }
         }
     }
