@@ -16,5 +16,9 @@ namespace FlightMobileServer.Models
         [JsonProperty(PropertyName = "throttle")]
         public double Throttle { get; set; }
 
+        public string ParseElevatorToString() { return " /controls/flight/elevator " + Elevator + "\n"; }
+        public string ParseRudderToString() { return " /controls/flight/rudder " + Rudder + "\n"; }
+        public string ParseThrottleToString() { return " /controls/engines/current-engine/throttle " + Throttle + "\n"; }
+        public string ParseAileronToString() { return " /controls/flight/aileron " + Aileron + "\n"; }
     }
 }

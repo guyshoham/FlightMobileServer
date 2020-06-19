@@ -1,9 +1,6 @@
 ﻿using FlightMobileServer.Models;
 using FlightMobileServer.Services;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace FlightMobileServer.Controllers
@@ -15,23 +12,35 @@ namespace FlightMobileServer.Controllers
         private readonly ICommandService _service;
         //static readonly HttpClient client = new HttpClient();
         //private readonly IHostingEnvironment _env;
+        private readonly FlightGearClient _client;
 
-        public CommandController(ICommandService services, IHostingEnvironment env)
+        public CommandController(ICommandService services)
         {
             _service = services;
-            //_env = env;
+            _client = new FlightGearClient();
         }
 
         // POST api/command
         [HttpPost]
         [Route("api/command")]
-        public ActionResult Post([FromBody] object json)
+        public async Task<ActionResult<Command>> Post([FromBody] Command command)
         {
-            Command command = JsonConvert.DeserializeObject<Command>(json.ToString());
+            // query validation
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            _client.Start();
+            await _client.Execute(command);
+
+            return Ok();
+
+            /*Command command = JsonConvert.DeserializeObject<Command>(json.ToString());
 
             _service.SendCommand(command);
 
-            return Ok();
+            return Ok();*/
         }
 
         // GET /screenshot
