@@ -36,11 +36,6 @@ namespace FlightMobileServer.Controllers
 
             return Ok();
 
-            /*Command command = JsonConvert.DeserializeObject<Command>(json.ToString());
-
-            _service.SendCommand(command);
-
-            return Ok();*/
         }
 
         // GET /screenshot
@@ -50,7 +45,7 @@ namespace FlightMobileServer.Controllers
         {
             if (Request.Host.Value.Contains("10.0.2.2"))
             {
-                return Redirect("http://10.0.2.2:8080/screenshot");
+                return Redirect("http://10.0.2.2:5000/screenshot");
             }
             else
             {
