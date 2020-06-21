@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace FlightMobileServer.Models
 {
@@ -18,18 +17,35 @@ namespace FlightMobileServer.Models
 
     public class FlightGearClient : IClient
     {
+        private static FlightGearClient instance;
         private readonly BlockingCollection<AsyncCommand> _queue;
         private TcpClient _client;
         private NetworkStream stream;
         readonly string _ip = "127.0.0.1";
         readonly int _port = 5402;
-        private bool isConected = false;
-        public FlightGearClient()
+        private bool isConnected = false;
+        // Lock synchronization object
+        private static readonly object syncLock = new object();
+        public static FlightGearClient GetFlightGearClient()
+        {
+            if (instance == null)
+            {
+                lock (syncLock)
+                {
+                    if (instance == null)
+                    {
+                        instance = new FlightGearClient();
+                    }
+                }
+            }
+            return instance;
+        }
+        // Constructor (protected)
+        protected FlightGearClient()
         {
             _queue = new BlockingCollection<AsyncCommand>();
-
-            _client = new TcpClient();
-
+            //start a new task 
+            Start();
         }
         // Called by the WebApi Controller, it will await on the returned Task<>
         // This is not an async method, since it does not await anything.
@@ -45,10 +61,9 @@ namespace FlightMobileServer.Models
         }
         public void ProcessCommands()
         {
-            if (!_client.Connected)
-            {
-                Connect(_ip, _port);
-            }
+            //connect only once
+            Connect(_ip, _port);
+
             string read;
             double paramValue;
             string[] gets = { "Aileron", "Elevator", "Rudder", "Throttle" };
@@ -100,10 +115,13 @@ namespace FlightMobileServer.Models
         }
         public void Connect(string ip, int port)
         {
-            if (!isConected)
+            if (!isConnected)
             {
-                _client.Connect(ip, port);
+                _client = new TcpClient(ip, port);
+                //_client.Connect(ip, port);
                 Console.WriteLine("Establishing Connection");
+                Console.WriteLine("Server Connected");
+
                 stream = _client.GetStream();
                 if (stream == null)
                 {
@@ -111,15 +129,28 @@ namespace FlightMobileServer.Models
                 }
                 // first command to change PROMPT
                 Write("data\n");
-                isConected = true;
+                isConnected = true;
                 _client.ReceiveTimeout = 10000;
                 _client.SendTimeout = 10000;
             }
 
-            if (isConected)
+            if (isConnected)
             {
                 Console.WriteLine("Server Connected");
             }
+        }
+        public void Disconnect()
+        {
+            if (stream != null)
+            {
+                stream.Close();
+            }
+            if (_client != null)
+            {
+                _client.Close();
+            }
+            isConnected = false;
+            Console.WriteLine("Server is disconnected");
         }
         public void Write(string command)
         {
@@ -148,25 +179,13 @@ namespace FlightMobileServer.Models
                 //Console.WriteLine("Received: {0}", responseData);
                 return responseData;
             }//*******************handle exception
-            catch (Exception e)
+            catch (IOException e)
             {
-                throw new Exception("Error in read");
+                throw new IOException("Error in read: " + e.Message);
 
             }
 
         }
-        public void Disconnect()
-        {
-            if (stream != null)
-            {
-                stream.Close();
-            }
-            if (_client != null)
-            {
-                _client.Close();
-            }
-            isConected = false;
-            Console.WriteLine("Server is disconnected");
-        }
+
     }
 }

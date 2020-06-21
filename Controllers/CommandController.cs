@@ -10,17 +10,17 @@ namespace FlightMobileServer.Controllers
     [ApiController]
     public class CommandController : ControllerBase
     {
-        private readonly FlightGearClient _client;
+        FlightGearClient _client;
 
         public CommandController()
         {
-            _client = new FlightGearClient();
+            _client = FlightGearClient.GetFlightGearClient();
         }
 
         // POST api/command
         [HttpPost]
         [Route("api/command")]
-        public async Task<ActionResult<Command>> Post([FromBody] Command command)
+        public async Task<ActionResult<Result>> Post([FromBody] Command command)
         {
             // query validation
             if (!ModelState.IsValid)
@@ -28,10 +28,10 @@ namespace FlightMobileServer.Controllers
                 return BadRequest("Invalid data.");
             }
 
-            _client.Start();
-            await _client.Execute(command);
+            //_client.Start();
+            var result = await _client.Execute(command);
 
-            return Ok();
+            return result;
         }
 
         // GET /screenshot
