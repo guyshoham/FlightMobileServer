@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace FlightMobileServer.Models
 {
@@ -16,6 +14,7 @@ namespace FlightMobileServer.Models
         void Disconnect();
     }
 
+
     public class FlightGearClient : IClient
     {
         private readonly BlockingCollection<AsyncCommand> _queue;
@@ -23,6 +22,7 @@ namespace FlightMobileServer.Models
         static NetworkStream stream;
         readonly string _ip = "127.0.0.1";
         readonly int _port = 5402;
+
 
         public FlightGearClient()
         {
@@ -42,8 +42,10 @@ namespace FlightMobileServer.Models
         }
         public void Start()
         {
+
             Task.Factory.StartNew(ProcessCommands);
         }
+  
         public void ProcessCommands()
         {
             if (!_client.Connected)
@@ -87,13 +89,16 @@ namespace FlightMobileServer.Models
                 read = Read();
                 res = CheckData(paramValue, read);
 
-
                 command.Completion.SetResult(res);
             }
         }
         public Result CheckData(double sent, string recieve)
         {
-            if (sent == Convert.ToDouble(recieve))
+            if (recieve.Length == 0)
+            {
+                return Result.NotOk;
+            }
+            else if (sent == Convert.ToDouble(recieve))
             {
                 return Result.Ok;
             }
@@ -101,31 +106,24 @@ namespace FlightMobileServer.Models
         }
         public void Connect(string ip, int port)
         {
-            //_client = new TcpClient();
             _client.Connect(ip, port);
 
-            // Set timeout.
-            //tcp_client.ReceiveTimeout = 10000;
-            //tcp_client.SendTimeout = 10000;
 
-            Console.WriteLine("Establishing Connection");
-            Console.WriteLine("Server Connected");
             stream = _client.GetStream();
+            if (stream == null) { throw new Exception("Error: Cannot get NetworkStream from TcpClient"); }
 
             // first command to change PROMPT
             Write("data\n");
         }
         public void Write(string command)
         {
-            //Console.WriteLine(command);
             // Translate the passed message into ASCII and store it as a Byte array.
             byte[] outData = new byte[1024];
             outData = Encoding.ASCII.GetBytes(command);
-            // Send the message to the connected TcpServer.
-            // if (stream != null)
-            // {
+            // Send the message to the connected tcp server.
+            if (stream == null) { throw new Exception("Error: Cannot get NetworkStream from TcpClient"); }
             stream.Write(outData, 0, outData.Length);
-            // }
+
             Console.WriteLine("Sent: {0}", command);
         }
         public string Read()

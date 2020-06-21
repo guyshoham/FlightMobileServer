@@ -15,5 +15,10 @@ namespace FlightMobileServer.Models
             Completion = new TaskCompletionSource<Result>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         }
+        public AsyncCommand(Command input, TaskCompletionSource<Result> completion)
+        {
+            Command = input;
+            Completion = completion;
+        }
     }
 }
