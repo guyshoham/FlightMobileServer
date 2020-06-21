@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace FlightMobileServer.Models
 {
@@ -14,23 +16,20 @@ namespace FlightMobileServer.Models
         void Disconnect();
     }
 
-
     public class FlightGearClient : IClient
     {
         private readonly BlockingCollection<AsyncCommand> _queue;
-        static TcpClient _client;
-        static NetworkStream stream;
+        private TcpClient _client;
+        private NetworkStream stream;
         readonly string _ip = "127.0.0.1";
         readonly int _port = 5402;
-
-
+        private bool isConected = false;
         public FlightGearClient()
         {
             _queue = new BlockingCollection<AsyncCommand>();
-            if (_client == null)
-            {
-                _client = new TcpClient();
-            }
+
+            _client = new TcpClient();
+
         }
         // Called by the WebApi Controller, it will await on the returned Task<>
         // This is not an async method, since it does not await anything.
@@ -42,19 +41,17 @@ namespace FlightMobileServer.Models
         }
         public void Start()
         {
-
             Task.Factory.StartNew(ProcessCommands);
         }
-  
         public void ProcessCommands()
         {
             if (!_client.Connected)
             {
                 Connect(_ip, _port);
             }
-            Result res;
             string read;
             double paramValue;
+            string[] gets = { "Aileron", "Elevator", "Rudder", "Throttle" };
 
             foreach (AsyncCommand command in _queue.GetConsumingEnumerable())
             {
@@ -64,7 +61,7 @@ namespace FlightMobileServer.Models
                 Write("set" + command.Command.ParseAileronToString());
                 Write("get /controls/flight/aileron\n");
                 read = Read();
-                res = CheckData(paramValue, read);
+                gets[0] = read;
 
 
                 // Elevator
@@ -72,7 +69,7 @@ namespace FlightMobileServer.Models
                 Write("set" + command.Command.ParseElevatorToString());
                 Write("get /controls/flight/elevator\n");
                 read = Read();
-                res = CheckData(paramValue, read);
+                gets[1] = read;
 
 
                 // Rudder
@@ -80,50 +77,61 @@ namespace FlightMobileServer.Models
                 Write("set" + command.Command.ParseRudderToString());
                 Write("get /controls/flight/rudder\n");
                 read = Read();
-                res = CheckData(paramValue, read);
+                gets[2] = read;
 
                 // Throttle
                 paramValue = command.Command.Throttle;
                 Write("set" + command.Command.ParseThrottleToString());
                 Write("get /controls/engines/current-engine/throttle\n");
                 read = Read();
-                res = CheckData(paramValue, read);
+                gets[3] = read;
 
-                command.Completion.SetResult(res);
+                command.Completion.SetResult(CheckData(command.Command, gets));
             }
         }
-        public Result CheckData(double sent, string recieve)
+        public Result CheckData(Command sent, string[] recieve)
         {
-            if (recieve.Length == 0)
+            if ((sent.Aileron != Convert.ToDouble(recieve[0])) || (sent.Elevator != Convert.ToDouble(recieve[1])) ||
+                (sent.Rudder != Convert.ToDouble(recieve[2])) || (sent.Throttle != Convert.ToDouble(recieve[3])))
             {
                 return Result.NotOk;
             }
-            else if (sent == Convert.ToDouble(recieve))
-            {
-                return Result.Ok;
-            }
-            return Result.NotOk;
+            return Result.Ok;
         }
         public void Connect(string ip, int port)
         {
-            _client.Connect(ip, port);
+            if (!isConected)
+            {
+                _client.Connect(ip, port);
+                Console.WriteLine("Establishing Connection");
+                stream = _client.GetStream();
+                if (stream == null)
+                {
+                    throw new Exception("Can't get NetworkStream from TcpClient");
+                }
+                // first command to change PROMPT
+                Write("data\n");
+                isConected = true;
+                _client.ReceiveTimeout = 10000;
+                _client.SendTimeout = 10000;
+            }
 
-
-            stream = _client.GetStream();
-            if (stream == null) { throw new Exception("Error: Cannot get NetworkStream from TcpClient"); }
-
-            // first command to change PROMPT
-            Write("data\n");
+            if (isConected)
+            {
+                Console.WriteLine("Server Connected");
+            }
         }
         public void Write(string command)
         {
+            //Console.WriteLine(command);
             // Translate the passed message into ASCII and store it as a Byte array.
             byte[] outData = new byte[1024];
             outData = Encoding.ASCII.GetBytes(command);
-            // Send the message to the connected tcp server.
-            if (stream == null) { throw new Exception("Error: Cannot get NetworkStream from TcpClient"); }
+            // Send the message to the connected TcpServer.
+            // if (stream != null)
+            // {
             stream.Write(outData, 0, outData.Length);
-
+            // }
             Console.WriteLine("Sent: {0}", command);
         }
         public string Read()
@@ -133,10 +141,19 @@ namespace FlightMobileServer.Models
             // String to store the response ASCII representation.
             String responseData;
             // Read the first batch of the TcpServer response bytes.
-            int bytes = stream.Read(inData, 0, inData.Length);
-            responseData = Encoding.ASCII.GetString(inData, 0, bytes);
-            //Console.WriteLine("Received: {0}", responseData);
-            return responseData;
+            try
+            {
+                int bytes = stream.Read(inData, 0, inData.Length);
+                responseData = Encoding.ASCII.GetString(inData, 0, bytes);
+                //Console.WriteLine("Received: {0}", responseData);
+                return responseData;
+            }//*******************handle exception
+            catch (Exception e)
+            {
+                throw new Exception("Error in read");
+
+            }
+
         }
         public void Disconnect()
         {
@@ -148,6 +165,7 @@ namespace FlightMobileServer.Models
             {
                 _client.Close();
             }
+            isConected = false;
             Console.WriteLine("Server is disconnected");
         }
     }
