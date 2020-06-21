@@ -7,13 +7,6 @@ using System.Threading.Tasks;
 
 namespace FlightMobileServer.Models
 {
-    interface IClient
-    {
-        void Connect(string ip, int port);
-        void Write(string command);
-        string Read();
-        void Disconnect();
-    }
 
     public class FlightGearClient : IClient
     {
@@ -21,16 +14,17 @@ namespace FlightMobileServer.Models
         private readonly BlockingCollection<AsyncCommand> _queue;
         private TcpClient _client;
         private NetworkStream stream;
-        readonly string _ip = "127.0.0.1";
-        readonly int _port = 5402;
-        private bool isConnected = false;
-        // Lock synchronization object
-        private static readonly object syncLock = new object();
-        public static FlightGearClient GetFlightGearClient()
+        private string _ip;
+        private int _port;
+        private bool connected = false;
+        private static readonly object locker = new object();
+
+        //singleton
+        public static FlightGearClient getClient()
         {
             if (instance == null)
             {
-                lock (syncLock)
+                lock (locker)
                 {
                     if (instance == null)
                     {
@@ -40,63 +34,61 @@ namespace FlightMobileServer.Models
             }
             return instance;
         }
-        // Constructor (protected)
+        // Constructor
         protected FlightGearClient()
         {
             _queue = new BlockingCollection<AsyncCommand>();
-            //start a new task 
-            Start();
+            _ip = "127.0.0.1";
+            _port = 5402;
+            run();
         }
-        // Called by the WebApi Controller, it will await on the returned Task<>
-        // This is not an async method, since it does not await anything.
-        public Task<Result> Execute(Command cmd)
+        
+        //API initiate
+        public Task<Result> Execute(Command command)
         {
-            var asyncCommand = new AsyncCommand(cmd);
+            var asyncCommand = new AsyncCommand(command);
             _queue.Add(asyncCommand);
             return asyncCommand.Task;
         }
-        public void Start()
+
+        public void run()
         {
             Task.Factory.StartNew(ProcessCommands);
         }
         public void ProcessCommands()
         {
-            //connect only once
-            Connect(_ip, _port);
-
             string read;
             double paramValue;
             string[] gets = { "Aileron", "Elevator", "Rudder", "Throttle" };
 
+            Connect(_ip, _port);
+
             foreach (AsyncCommand command in _queue.GetConsumingEnumerable())
             {
-
                 // Aileron
                 paramValue = command.Command.Aileron;
-                Write("set" + command.Command.ParseAileronToString());
+                Write("set" + command.Command.AileronString());
                 Write("get /controls/flight/aileron\n");
                 read = Read();
                 gets[0] = read;
 
-
                 // Elevator
                 paramValue = command.Command.Elevator;
-                Write("set" + command.Command.ParseElevatorToString());
+                Write("set" + command.Command.ElevatorString());
                 Write("get /controls/flight/elevator\n");
                 read = Read();
                 gets[1] = read;
 
-
                 // Rudder
                 paramValue = command.Command.Rudder;
-                Write("set" + command.Command.ParseRudderToString());
+                Write("set" + command.Command.RudderString());
                 Write("get /controls/flight/rudder\n");
                 read = Read();
                 gets[2] = read;
 
                 // Throttle
                 paramValue = command.Command.Throttle;
-                Write("set" + command.Command.ParseThrottleToString());
+                Write("set" + command.Command.ThrottleString());
                 Write("get /controls/engines/current-engine/throttle\n");
                 read = Read();
                 gets[3] = read;
@@ -115,7 +107,7 @@ namespace FlightMobileServer.Models
         }
         public void Connect(string ip, int port)
         {
-            if (!isConnected)
+            if (!connected)
             {
                 _client = new TcpClient(ip, port);
                 //_client.Connect(ip, port);
@@ -129,12 +121,12 @@ namespace FlightMobileServer.Models
                 }
                 // first command to change PROMPT
                 Write("data\n");
-                isConnected = true;
+                connected = true;
                 _client.ReceiveTimeout = 10000;
                 _client.SendTimeout = 10000;
             }
 
-            if (isConnected)
+            if (connected)
             {
                 Console.WriteLine("Server Connected");
             }
@@ -149,16 +141,15 @@ namespace FlightMobileServer.Models
             {
                 _client.Close();
             }
-            isConnected = false;
+            connected = false;
             Console.WriteLine("Server is disconnected");
         }
         public void Write(string command)
         {
-            //Console.WriteLine(command);
+            
             // Translate the passed message into ASCII and store it as a Byte array.
             byte[] outData = new byte[1024];
             outData = Encoding.ASCII.GetBytes(command);
-            // Send the message to the connected TcpServer.
             // if (stream != null)
             // {
             stream.Write(outData, 0, outData.Length);
