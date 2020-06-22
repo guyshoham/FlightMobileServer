@@ -14,7 +14,7 @@ namespace FlightMobileServer.Controllers
 
         public CommandController()
         {
-            _client = FlightGearClient.GetFlightGearClient();
+            _client = FlightGearClient.getClient();
         }
 
         // POST api/command
