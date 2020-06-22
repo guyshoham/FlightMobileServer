@@ -22,7 +22,7 @@ The app send control commands to the simulator, and also receive screenshot imag
 2. Create **Pixel XL** emulator in Android Studio
 3. Download and install [FlightGear](https://www.flightgear.org/download/)
 
-## Set FlightGear Simulator
+### Set FlightGear Simulator
 
 1. Open FlightGear Simulator.
 2. Click Settings
