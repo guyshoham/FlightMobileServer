@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace FlightMobileServer.Models
 {
-    public class FlightGearClient : IClient
+    public class Client : IClient
     {
-        private static FlightGearClient instance;
+        private static Client instance;
         private readonly BlockingCollection<AsyncCommand> _queue;
         private TcpClient _client;
         private NetworkStream stream;
@@ -19,7 +19,7 @@ namespace FlightMobileServer.Models
         private static readonly object locker = new object();
 
         //singleton
-        public static FlightGearClient getClient()
+        public static Client getClient()
         {
             if (instance == null)
             {
@@ -27,14 +27,14 @@ namespace FlightMobileServer.Models
                 {
                     if (instance == null)
                     {
-                        instance = new FlightGearClient();
+                        instance = new Client();
                     }
                 }
             }
             return instance;
         }
         // Constructor
-        protected FlightGearClient()
+        protected Client()
         {
             _queue = new BlockingCollection<AsyncCommand>();
             _ip = "127.0.0.1";

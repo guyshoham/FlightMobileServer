@@ -10,11 +10,11 @@ namespace FlightMobileServer.Controllers
     [ApiController]
     public class CommandController : ControllerBase
     {
-        FlightGearClient _client;
+        Client _client;
 
         public CommandController()
         {
-            _client = FlightGearClient.getClient();
+            _client = Client.getClient();
         }
 
         // POST api/command
