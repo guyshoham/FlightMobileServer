@@ -44,7 +44,7 @@ namespace FlightMobileServer.Controllers
                 return screenshot;
             }
             catch (Exception)
-            {                
+            {
                 return NotFound("Error: in method GET screenshot\n");
             }
         }

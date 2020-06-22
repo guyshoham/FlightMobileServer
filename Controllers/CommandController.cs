@@ -27,16 +27,15 @@ namespace FlightMobileServer.Controllers
                 // query validation
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest("Invalid data.");
+                    return BadRequest();
                 }
-
 
                 var result = await _client.Execute(command);
                 return result;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                return NotFound(e.Message);
+                return NotFound();
             }
         }
     }

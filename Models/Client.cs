@@ -41,7 +41,7 @@ namespace FlightMobileServer.Models
             _port = 5402;
             run();
         }
-        
+
         //API initiate
         public Task<Result> Execute(Command command)
         {
@@ -145,7 +145,7 @@ namespace FlightMobileServer.Models
         }
         public void Write(string command)
         {
-            
+
             // Translate the passed message into ASCII and store it as a Byte array.
             byte[] outData = new byte[1024];
             outData = Encoding.ASCII.GetBytes(command);
@@ -176,6 +176,5 @@ namespace FlightMobileServer.Models
             }
 
         }
-
     }
 }
