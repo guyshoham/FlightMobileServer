@@ -14,7 +14,7 @@ The app send control commands to the simulator, and also receive screenshot imag
 * 100% Kotlin :white_check_mark:
 * Database using **room** library :white_check_mark:
 * HTTP request using **retrofit** library :white_check_mark:
-* I/O requests using **Kotlin Coroutines* :white_check_mark:
+* I/O requests using **Kotlin Coroutines** :white_check_mark:
 
 ### Installation
 
