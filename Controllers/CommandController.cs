@@ -22,34 +22,21 @@ namespace FlightMobileServer.Controllers
         [Route("api/command")]
         public async Task<ActionResult<Result>> Post([FromBody] Command command)
         {
-            // query validation
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest("Invalid data.");
+                // query validation
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest("Invalid data.");
+                }
+
+
+                var result = await _client.Execute(command);
+                return result;
             }
-
-            //_client.Start();
-            var result = await _client.Execute(command);
-
-            return result;
-        }
-
-        // GET /screenshot
-        [HttpGet]
-        [Route("screenshot")]
-        public ActionResult GetScreenshot()
-        {
-            /*IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName()); // `Dns.Resolve()` method is deprecated.
-            IPAddress ipAddress1 = ipHostInfo.AddressList[2];
-            IPAddress ipAddress2 = ipHostInfo.AddressList[3];*/
-
-            if (Request.Host.Value.Contains("10.0.2.2"))
+            catch (Exception e)
             {
-                return Redirect("http://10.0.2.2:8080/screenshot");
-            }
-            else
-            {
-                return Redirect("http://127.0.0.1:8080/screenshot");
+                return NotFound(e.Message);
             }
         }
     }

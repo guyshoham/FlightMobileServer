@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace FlightMobileServer.Models
 {
-
     public class FlightGearClient : IClient
     {
         private static FlightGearClient instance;
