@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 
 namespace FlightMobileServer.Controllers
@@ -12,9 +13,9 @@ namespace FlightMobileServer.Controllers
     {
         Client _client;
 
-        public CommandController()
+        public CommandController(IConfiguration conf)
         {
-            _client = Client.getClient();
+            _client = Client.GetClient(conf);
         }
 
         // POST api/command

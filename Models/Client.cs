@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -19,7 +20,7 @@ namespace FlightMobileServer.Models
         private static readonly object locker = new object();
 
         //singleton
-        public static Client getClient()
+        public static Client GetClient(IConfiguration conf)
         {
             if (instance == null)
             {
@@ -27,18 +28,18 @@ namespace FlightMobileServer.Models
                 {
                     if (instance == null)
                     {
-                        instance = new Client();
+                        instance = new Client(conf);
                     }
                 }
             }
             return instance;
         }
         // Constructor
-        protected Client()
+        protected Client(IConfiguration conf)
         {
             _queue = new BlockingCollection<AsyncCommand>();
-            _ip = "127.0.0.1";
-            _port = 5402;
+            _ip = conf.GetValue<string>("Logging:CommandHostPort:Host");
+            _port = conf.GetValue<int>("Logging:CommandHostPort:Port");
             run();
         }
 
